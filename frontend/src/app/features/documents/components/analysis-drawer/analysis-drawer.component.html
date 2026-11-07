@@ -1,0 +1,215 @@
+<aside class="drawer-container" [class.is-open]="true">
+  <!-- Header -->
+  <div class="drawer-header">
+    <div class="header-left">
+      <div class="ai-sparkle-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="drawer-title">AI Intelligence & Insights</h3>
+        @if (analysis(); as data) {
+          <span class="model-badge">
+            <span class="pulse-dot"></span>
+            {{ data.modelUsed || 'AI Engine' }}
+          </span>
+        }
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      @if (analysis() && !isAnalyzing()) {
+        <button class="icon-btn" (click)="onReanalyze()" title="Re-run AI Analysis">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 16h5v5"/>
+          </svg>
+        </button>
+      }
+      <button class="icon-btn close-btn" (click)="onClose()" title="Close insights drawer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Body -->
+  <div class="drawer-body">
+    @if (isAnalyzing()) {
+      <div class="state-container loading-state">
+        <div class="spinner-ring">
+          <div></div><div></div><div></div><div></div>
+        </div>
+        <h4>Analyzing Document...</h4>
+        <p>Extracting executive summary, key tasks, architectural decisions, and risks using AI.</p>
+        <div class="loading-progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="state-container error-state">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" x2="12" y1="8" y2="12"/>
+            <line x1="12" x2="12.01" y1="16" y2="16"/>
+          </svg>
+        </div>
+        <h4>Analysis Unavailable</h4>
+        <p>{{ errorMessage() }}</p>
+        <button class="btn btn-secondary" (click)="onReanalyze()">Retry Analysis</button>
+      </div>
+    } @else {
+      @if (analysis(); as data) {
+        <!-- Category Tabs -->
+        <nav class="insight-nav-tabs">
+          <button class="nav-tab" [class.active]="activeTab() === 'all'" (click)="setTab('all')">
+            All
+          </button>
+          <button class="nav-tab" [class.active]="activeTab() === 'summary'" (click)="setTab('summary')">
+            Summary
+          </button>
+          @if (data.candidateTasks && data.candidateTasks.length > 0) {
+            <button class="nav-tab" [class.active]="activeTab() === 'tasks'" (click)="setTab('tasks')">
+              Tasks ({{ data.candidateTasks.length }})
+            </button>
+          }
+          @if (data.candidateDecisions && data.candidateDecisions.length > 0) {
+            <button class="nav-tab" [class.active]="activeTab() === 'decisions'" (click)="setTab('decisions')">
+              Decisions ({{ data.candidateDecisions.length }})
+            </button>
+          }
+          @if (data.candidateIssues && data.candidateIssues.length > 0) {
+            <button class="nav-tab" [class.active]="activeTab() === 'issues'" (click)="setTab('issues')">
+              Risks ({{ data.candidateIssues.length }})
+            </button>
+          }
+        </nav>
+
+        <!-- Content Sections -->
+        <div class="insights-scroll-content">
+          <!-- Summary & Key Points -->
+          @if (activeTab() === 'all' || activeTab() === 'summary') {
+            <div class="insight-section summary-box">
+              <div class="section-header">
+                <span class="section-badge badge-purple">Executive Overview</span>
+                <button class="copy-btn" (click)="copySummary()" title="Copy summary">
+                  @if (copiedState()) {
+                    <span class="copied-text">✓ Copied</span>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                    <span>Copy</span>
+                  }
+                </button>
+              </div>
+              <p class="summary-paragraph">{{ data.summary }}</p>
+
+              @if (data.keyPoints && data.keyPoints.length > 0) {
+                <div class="key-points-wrapper">
+                  <h5 class="sub-heading">Key Takeaways</h5>
+                  <ul class="key-points-list">
+                    @for (point of data.keyPoints; track $index) {
+                      <li>
+                        <span class="bullet-dot"></span>
+                        <span>{{ point }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Candidate Tasks -->
+          @if (data.candidateTasks.length > 0) {
+          <section class="section">
+            <h4>Candidate Tasks ({{ data.candidateTasks.length }})</h4>
+            <div class="card-stack">
+              @for (task of data.candidateTasks; track $index) {
+                <div class="insight-card task-card">
+                  <div class="task-card-main">
+                    <div class="card-title">{{ task.title }}</div>
+                    <div class="card-context">{{ task.context }}</div>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-accept"
+                    [class.accepted]="isTaskAccepted(task.title)"
+                    [disabled]="isTaskAccepted(task.title)"
+                    (click)="onAcceptTask(task)"
+                    title="Add this task to document checklist"
+                  >
+                    {{ isTaskAccepted(task.title) ? '✓ Added' : '+ Add' }}
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+          <!-- Candidate Decisions -->
+          @if ((activeTab() === 'all' || activeTab() === 'decisions') && data.candidateDecisions && data.candidateDecisions.length > 0) {
+            <div class="insight-section">
+              <div class="section-header">
+                <span class="section-badge badge-emerald">Candidate Decisions ({{ data.candidateDecisions.length }})</span>
+              </div>
+              <div class="cards-grid">
+                @for (dec of data.candidateDecisions; track $index) {
+                  <div class="card item-card decision-card">
+                    <div class="card-header-row">
+                      <span class="type-indicator decision-type">Decision</span>
+                      <h5 class="card-item-title">{{ dec.decision }}</h5>
+                    </div>
+                    @if (dec.context) {
+                      <p class="card-item-context">{{ dec.context }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Candidate Issues -->
+          @if ((activeTab() === 'all' || activeTab() === 'issues') && data.candidateIssues && data.candidateIssues.length > 0) {
+            <div class="insight-section">
+              <div class="section-header">
+                <span class="section-badge badge-amber">Risks & Issues ({{ data.candidateIssues.length }})</span>
+              </div>
+              <div class="cards-grid">
+                @for (issue of data.candidateIssues; track $index) {
+                  <div class="card item-card issue-card">
+                    <div class="card-header-row">
+                      <h5 class="card-item-title">{{ issue.issue }}</h5>
+                      <span class="severity-pill" [attr.data-severity]="issue.severity">
+                        {{ issue.severity }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="state-container empty-state">
+          <div class="empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+            </svg>
+          </div>
+          <h4>No Analysis Yet</h4>
+          <p>Click "Analyze with AI" to generate structured summaries, extracted tasks, key decisions, and risk assessments.</p>
+          <button class="btn btn-primary" (click)="onReanalyze()">Generate Insights</button>
+        </div>
+      }
+    }
+  </div>
+</aside>

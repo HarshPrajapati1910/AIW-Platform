@@ -1,0 +1,215 @@
+<div class="page-container">
+  <!-- Top Application Navbar -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <path d="m10 13-2 2 2 2"/>
+          <path d="m14 13 2 2-2 2"/>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <h2>AIW Platform</h2>
+        <span class="sub-label">Intelligent Workspace Hub</span>
+      </div>
+    </div>
+
+    <div class="header-right-actions">
+      <button class="btn btn-outline" (click)="fileInput.click()" [disabled]="isUploading()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" x2="12" y1="3" y2="15"/>
+        </svg>
+        <span>Upload PDF / Text</span>
+      </button>
+      <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf,.txt" style="display: none;" />
+
+      <button class="btn btn-primary" (click)="createNew()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>New Document</span>
+      </button>
+
+      @if (auth.isAuthenticated()) {
+        <div class="user-profile-badge">
+          <div class="avatar-circle">
+            {{ (auth.userEmail() || 'U').charAt(0).toUpperCase() }}
+          </div>
+          <div class="user-details">
+            <span class="user-email-text" [title]="auth.userEmail()">{{ auth.userEmail() }}</span>
+            <span class="user-role-tag">{{ auth.userRole() }}</span>
+          </div>
+          <button class="btn-logout" (click)="auth.logout()" title="Sign out of AIW Platform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+  </header>
+
+  <!-- Drag and Drop Overlay Banner if Uploading / Uploading Error -->
+  @if (uploadError()) {
+    <div class="banner error-banner">
+      <span>{{ uploadError() }}</span>
+      <button class="close-banner" (click)="uploadError.set(null)">✕</button>
+    </div>
+  }
+
+  @if (isUploading()) {
+    <div class="banner info-banner">
+      <div class="spinner-small"></div>
+      <span>Extracting document text and processing AI metadata... Please wait.</span>
+    </div>
+  }
+
+  <!-- Main Content Body -->
+  <main class="main-body">
+    <!-- Hero Header / Search Bar -->
+    <div class="hero-section">
+      <div class="hero-titles">
+        <h1>Document Repository</h1>
+        <p>Manage specs, upload requirements, and run AI analysis to extract key tasks & risks.</p>
+      </div>
+
+      <div class="search-bar-wrapper">
+        <div class="search-input-box">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search documents by title or keywords..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+          @if (searchQuery()) {
+            <button class="clear-search" (click)="searchQuery.set('')">✕</button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Drag Drop Zone -->
+    <div
+      class="drop-zone"
+      [class.drag-over]="isDragOver()"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+    >
+      <div class="drop-zone-content">
+        <div class="drop-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 14.89 9 11.6a2 2 0 0 1 2.22.1l2.56 2.11a2 2 0 0 0 2.22.1L20 11.2"/>
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+          </svg>
+        </div>
+        <div class="drop-text">
+          <span class="primary-text">Drag and drop your PDF or TXT document here</span>
+          <span class="secondary-text">or <a (click)="fileInput.click()">browse files</a> from your computer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents Grid -->
+    <div class="content-area">
+      @if (isLoading()) {
+        <div class="loading-grid">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <div class="skeleton-card"></div>
+          }
+        </div>
+      } @else if (errorMessage()) {
+        <div class="error-container">
+          <div class="error-icon">⚠️</div>
+          <h3>Unable to load documents</h3>
+          <p>{{ errorMessage() }}</p>
+          <button class="btn btn-secondary" (click)="loadDocuments()">Retry Connection</button>
+        </div>
+      } @else if (filteredDocuments().length === 0) {
+        <div class="empty-container">
+          <div class="empty-illustration">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          @if (searchQuery()) {
+            <h3>No matching documents</h3>
+            <p>No documents matched your search term "{{ searchQuery() }}".</p>
+            <button class="btn btn-outline" (click)="searchQuery.set('')">Clear Search Filter</button>
+          } @else {
+            <h3>No documents found</h3>
+            <p>Get started by creating a new document or uploading a PDF/TXT file.</p>
+            <div class="empty-actions">
+              <button class="btn btn-primary" (click)="createNew()">Create Document</button>
+              <button class="btn btn-outline" (click)="fileInput.click()">Upload File</button>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="documents-grid">
+          @for (doc of filteredDocuments(); track doc.id) {
+            <div class="document-card" (click)="openDocument(doc.id)">
+              <div class="card-header">
+                <div class="doc-type-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                  </svg>
+                  <span>Doc</span>
+                </div>
+
+                <div class="card-menu">
+                  <button
+                    class="card-action-btn delete-btn"
+                    (click)="deleteDocument($event, doc.id, doc.title)"
+                    title="Delete document"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <h3 class="doc-title">{{ doc.title || 'Untitled Document' }}</h3>
+              <p class="doc-preview">{{ doc.preview || 'No text preview available...' }}</p>
+
+              <div class="card-footer">
+                <span class="update-time">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  {{ formatDate(doc.updatedAt) }}
+                </span>
+
+                <span class="open-link">
+                  <span>Open & Analyze</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </main>
+</div>

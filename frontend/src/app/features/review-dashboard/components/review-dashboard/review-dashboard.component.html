@@ -1,0 +1,309 @@
+<div class="review-dashboard-container">
+  <!-- Dashboard Top Header Bar -->
+  <header class="dashboard-header">
+    <div class="header-main-info">
+      <div class="header-icon-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      </div>
+      <div class="title-meta">
+        <h2>Architecture & Code Audit</h2>
+        <div class="meta-tags">
+          <span class="sub-caption">Multi-Agent Static & Dynamic Analysis</span>
+          @if (reviewService.detectedLanguage(); as lang) {
+          <span class="language-badge">
+            <span class="pulse-dot"></span>
+            {{ lang }}
+          </span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-trigger" [disabled]="reviewService.isRunning()" (click)="runReview()">
+        @if (reviewService.isRunning()) {
+        <div class="spinner-mini"></div>
+        <span>Auditing System...</span>
+        } @else if (hasReport()) {
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+          <path d="M21 3v5h-5" />
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+          <path d="M8 16H3v5" />
+        </svg>
+        <span>Re-run Audit</span>
+        } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3" />
+        </svg>
+        <span>Run Multi-Agent Audit</span>
+        }
+      </button>
+
+      <button class="icon-btn-close" (click)="close.emit()" title="Close audit panel">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Live Multi-Agent Stepper Pipeline -->
+  <section class="stepper-section">
+    <div class="stepper-track">
+      @for (step of reviewService.steps(); track step.name) {
+      <div class="step-card" [class.completed]="step.status === 'completed'" [class.running]="step.status === 'running'"
+        [class.pending]="step.status === 'pending'">
+        <div class="step-indicator-wrapper">
+          @if (step.status === 'completed') {
+          <div class="step-indicator check">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="3">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          } @else if (step.status === 'running') {
+          <div class="step-indicator spinning"></div>
+          } @else {
+          <div class="step-indicator neutral"></div>
+          }
+        </div>
+
+        <div class="step-info">
+          <span class="step-name">{{ step.displayName }}</span>
+          <span class="step-findings">
+            @if (step.status === 'completed') {
+            {{ step.findingsCount }} {{ step.findingsCount === 1 ? 'finding' : 'findings' }}
+            } @else if (step.status === 'running') {
+            <span class="running-text">Analyzing...</span>
+            } @else {
+            Awaiting
+            }
+          </span>
+        </div>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Error Alert -->
+  @if (reviewService.error(); as err) {
+  <div class="alert-error">
+    <div class="error-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span><strong>Audit stream interrupted:</strong> {{ err }}</span>
+    </div>
+    <button class="btn-retry" (click)="runReview()">Retry</button>
+  </div>
+  }
+
+  <!-- Welcome / Empty State before first audit run -->
+  @if (!hasReport() && !reviewService.isRunning() && !reviewService.error()) {
+  <div class="initial-empty-state">
+    <div class="empty-icon-shield">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.75">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    </div>
+    <h3>Multi-Agent Architecture & Code Audit</h3>
+    <p>
+      Run an autonomous inspection of this document with our specialized AI agents:
+    </p>
+    <div class="agents-overview-grid">
+      <div class="agent-preview-card">
+        <span class="agent-icon-chip arch">🏛️</span>
+        <strong>Architecture Specialist</strong>
+        <span>Validates layering, patterns, and decoupling</span>
+      </div>
+      <div class="agent-preview-card">
+        <span class="agent-icon-chip sec">🛡️</span>
+        <strong>Security Specialist</strong>
+        <span>Scans for injection, auth, and secrets risks</span>
+      </div>
+      <div class="agent-preview-card">
+        <span class="agent-icon-chip perf">⚡</span>
+        <strong>Performance Specialist</strong>
+        <span>Identifies latency, loops, and resource leaks</span>
+      </div>
+    </div>
+    <button class="btn-start-audit" (click)="runReview()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3" />
+      </svg>
+      <span>Start Multi-Agent Audit</span>
+    </button>
+  </div>
+  }
+
+  <!-- Review Report Results View -->
+  @if (reviewService.reviewReport(); as report) {
+  <!-- Composite Health Score & Domain Metrics Deck -->
+  <section class="metrics-grid">
+    <div class="score-card overall">
+      <div class="score-dial" [style.border-color]="getScoreColor(report.overall_score)"
+        [style.background-color]="getScoreBg(report.overall_score)">
+        <span class="score-num" [style.color]="getScoreColor(report.overall_score)">{{ report.overall_score }}</span>
+        <span class="score-max">/100</span>
+      </div>
+      <div class="score-meta">
+        <div class="score-heading-row">
+          <h3>Composite Health Score</h3>
+          @if (report.overall_score >= 80) {
+          <span class="grade-badge pass">Healthy</span>
+          } @else if (report.overall_score >= 50) {
+          <span class="grade-badge warn">Needs Work</span>
+          } @else {
+          <span class="grade-badge crit">Critical Issues</span>
+          }
+        </div>
+        <p>{{ report.executive_summary }}</p>
+      </div>
+    </div>
+
+    <div class="domain-scores">
+      @for (score of report.domain_scores || []; track score.domain) {
+      <div class="domain-pill">
+        <div class="domain-header">
+          <span class="domain-name">{{ score.domain }}</span>
+          <strong [style.color]="getScoreColor(score.score)">{{ score.score }}%</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="score.score"
+            [style.background-color]="getScoreColor(score.score)"></div>
+        </div>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Filters Deck -->
+  <section class="filter-toolbar">
+    <div class="filter-group">
+      <label>Severity:</label>
+      <div class="btn-group">
+        <button [class.active]="selectedSeverity() === 'All'" (click)="setSeverityFilter('All')">
+          All <span class="counter">({{ totalFindingsCount() }})</span>
+        </button>
+        <button [class.active]="selectedSeverity() === 'Critical'" (click)="setSeverityFilter('Critical')">
+          Critical @if (criticalCount() > 0) { <span class="counter crit">({{ criticalCount() }})</span> }
+        </button>
+        <button [class.active]="selectedSeverity() === 'High'" (click)="setSeverityFilter('High')">
+          High @if (highCount() > 0) { <span class="counter high">({{ highCount() }})</span> }
+        </button>
+        <button [class.active]="selectedSeverity() === 'Medium'" (click)="setSeverityFilter('Medium')">
+          Medium @if (mediumCount() > 0) { <span class="counter med">({{ mediumCount() }})</span> }
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Domain:</label>
+      <div class="btn-group">
+        <button [class.active]="selectedDomain() === 'All'" (click)="setDomainFilter('All')">All</button>
+        <button [class.active]="selectedDomain() === 'Security'" (click)="setDomainFilter('Security')">Security</button>
+        <button [class.active]="selectedDomain() === 'Performance'"
+          (click)="setDomainFilter('Performance')">Performance</button>
+        <button [class.active]="selectedDomain() === 'Architecture'"
+          (click)="setDomainFilter('Architecture')">Architecture</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Findings Deck & Code Diff -->
+  <section class="findings-list">
+    @for (finding of filteredFindings(); track finding.id) {
+    <article class="finding-card" [attr.data-severity]="finding.severity">
+      <div class="finding-header">
+        <div class="badges-row">
+          <span class="badge-severity" [class]="finding.severity.toLowerCase()">{{ finding.severity }}</span>
+          <span class="badge-domain">{{ finding.domain }}</span>
+        </div>
+        <h4>{{ finding.title }}</h4>
+      </div>
+
+      <p class="finding-desc">{{ finding.description }}</p>
+
+      <!-- Side-by-Side Diff Section -->
+      <div class="diff-container">
+        <div class="diff-block original">
+          <div class="diff-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            <span>Problematic Code</span>
+          </div>
+          <pre><code>{{ finding.problematic_code }}</code></pre>
+        </div>
+
+        <div class="diff-block patch">
+          <div class="diff-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>Recommended Patch</span>
+          </div>
+          <pre><code>{{ finding.recommended_patch }}</code></pre>
+        </div>
+      </div>
+
+      <div class="finding-actions">
+        @if (isPatchApplied(finding.id)) {
+        <div class="patch-applied-indicator">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>Patch Applied to Editor</span>
+        </div>
+        } @else {
+        <button class="btn-patch" (click)="applyPatch(finding)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          <span>Apply Surgical Patch</span>
+        </button>
+        }
+      </div>
+    </article>
+    } @empty {
+    <div class="no-findings-box">
+      <div class="check-circle-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
+      @if (totalFindingsCount() === 0) {
+      <h4>All Checks Passed</h4>
+      <p>No architecture, security, or performance issues were found in this document.</p>
+      } @else {
+      <h4>No Issues Matching Filter</h4>
+      <p>Try selecting "All" in the severity or domain filters to view other findings.</p>
+      }
+    </div>
+    }
+  </section>
+  }
+</div>
